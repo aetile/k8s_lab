@@ -15,8 +15,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (endpoint) (rate(http_requests_total{job=\"demo-app\"}[1m]))",
-          "legendFormat": "{{endpoint}}"
+          "expr": "sum by (exported_endpoint) (rate(http_requests_total{job=\"demo-app\"}[1m]))",
+          "legendFormat": "{{exported_endpoint}}"
         }
       ]
     },
