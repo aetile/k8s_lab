@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/aetile/k8s-gitops-lab.git
+    repoURL: https://github.com/aetile/k8s_lab.git
     targetRevision: main
     path: deploy/app
   destination:
