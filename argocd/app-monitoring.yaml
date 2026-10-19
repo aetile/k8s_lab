@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Le nom de l'application devient le nom de la release Helm :
+  # les secrets et services s'appellent donc kube-prometheus-stack-*.
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    # Épinglez une version précise du chart une fois le lab fonctionnel
+    # (reproductibilité). "*" prend la dernière version publiée.
+    targetRevision: "*"
+    helm:
+      valuesObject:
+        prometheus:
+          prometheusSpec:
+            # Prendre en compte les ServiceMonitor et PrometheusRule de tout namespace.
+            serviceMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+        # Dans kind, ces composants écoutent sur 127.0.0.1 et ne sont pas joignables :
+        # on les désactive pour éviter de fausses alertes TargetDown.
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+        kubeProxy:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Les CRD de la stack sont volumineuses : l'apply côté serveur est nécessaire.
+      - ServerSideApply=true

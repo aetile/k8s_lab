@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: demo
+
+resources:
+  - deployment.yaml
+  - service.yaml
+
+images:
+  - name: ghcr.io/GITHUB_USER/k8s-gitops-lab-app
+    # Cette ligne est réécrite par la CI à chaque build (SHA du commit).
+    newTag: latest

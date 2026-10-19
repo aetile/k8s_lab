@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "deploy/**"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/k8s-gitops-lab-app
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r app/requirements.txt pytest
+      - run: pytest app
+
+  smoke-test-kind:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build de l'image
+        run: docker build -t demo-app:ci app
+      - name: Cluster kind éphémère
+        uses: helm/kind-action@v1
+      - name: Charger l'image dans kind
+        run: kind load docker-image demo-app:ci --name chart-testing
+      - name: Déployer les manifestes
+        run: |
+          kubectl create namespace demo
+          kubectl apply -k deploy/app
+          kubectl -n demo set image deployment/demo-app app=demo-app:ci
+      - name: Attendre que le déploiement soit prêt
+        run: kubectl -n demo rollout status deployment/demo-app --timeout=120s
+      - name: Test de santé
+        run: |
+          kubectl -n demo port-forward svc/demo-app 8080:80 &
+          sleep 5
+          curl -fsS http://localhost:8080/healthz
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: smoke-test-kind
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+      - name: Mettre à jour le tag de l'image dans le dépôt (GitOps)
+        run: |
+          sed -i "s/newTag: .*/newTag: ${{ github.sha }}/" deploy/app/kustomization.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy/app/kustomization.yaml
+          git commit -m "chore: déployer l'image ${{ github.sha }} [skip ci]"
+          git push
