@@ -8,6 +8,6 @@ resources:
   - service.yaml
 
 images:
-  - name: ghcr.io/GITHUB_USER/k8s-gitops-lab-app
+  - name: ghcr.io/aetile/k8s-gitops-lab-app
     # Cette ligne est réécrite par la CI à chaque build (SHA du commit).
     newTag: latest

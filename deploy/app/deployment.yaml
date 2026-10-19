@@ -21,7 +21,7 @@ spec:
       containers:
         - name: app
           # Le tag est géré par kustomization.yaml (mis à jour par la CI).
-          image: ghcr.io/GITHUB_USER/k8s-gitops-lab-app:latest
+          image: ghcr.io/aetile/k8s-gitops-lab-app:latest
           ports:
             - name: http
               containerPort: 8000
