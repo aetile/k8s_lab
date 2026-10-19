@@ -10,4 +10,4 @@ resources:
 images:
   - name: ghcr.io/aetile/k8s-gitops-lab-app
     # Cette ligne est réécrite par la CI à chaque build (SHA du commit).
-    newTag: latest
+    newTag: ebb944b3b1b4a2838bb002357ecf62a593d34198
